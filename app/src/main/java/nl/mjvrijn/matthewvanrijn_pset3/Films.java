@@ -1,5 +1,7 @@
 package nl.mjvrijn.matthewvanrijn_pset3;
 
+import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -10,11 +12,16 @@ import android.util.JsonReader;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import java.io.IOException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
 
 public class Films extends AppCompatActivity {
     private ArrayList<Film> favourites;
@@ -68,11 +75,27 @@ public class Films extends AppCompatActivity {
     }
 
     private void loadSave() {
-        new APIConnection().execute("tt4731008");
-        new APIConnection().execute("tt0068646");
-        new APIConnection().execute("tt0108052");
-        new APIConnection().execute("tt1375666");
-        new APIConnection().execute("tt0102926");
+        SharedPreferences prefs = getPreferences(MODE_PRIVATE);
+
+        SharedPreferences.Editor edit = prefs.edit();
+        HashSet<String> tosave = new HashSet<>();
+        tosave.add("tt0120815");
+        tosave.add("tt0068646");
+        tosave.add("tt0108052");
+        tosave.add("tt1375666");
+        tosave.add("tt0102926");
+        tosave.add("tt0253474");
+        tosave.add("tt0172495");
+        tosave.add("tt0211915");
+        tosave.add("tt0086190");
+        edit.putStringSet("saved", tosave);
+        edit.apply();
+
+        Set<String> saved = prefs.getStringSet("saved", new HashSet<String>());
+
+        for(String id : saved) {
+            new APIConnection().execute(id);
+        }
     }
 
     public class APIConnection extends AsyncTask<String, Integer, String> {
@@ -83,20 +106,21 @@ public class Films extends AppCompatActivity {
         protected String doInBackground(String... params) {
             String imdbID = params[0];
 
-            JsonReader reader;
             try {
                 URL url = new URL(String.format(address, imdbID));
                 InputStream is = url.openStream();
-                reader = new JsonReader(new InputStreamReader(is));
 
-                reader.beginObject();
-                while(reader.hasNext()) {
-                    String fieldName = reader.nextName();
-                    if(fieldName.equals("Title")) {
-                        result.setTitle(reader.nextString());
-                        break;
-                    }
-                }
+                // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
+                Scanner s = new Scanner(is).useDelimiter("\\A");
+                String json = s.hasNext() ? s.next() : "";
+
+                JSONObject reader = new JSONObject(json);
+
+                result.setTitle(reader.getString("Title"));
+                result.setYear(reader.getInt("Year"));
+                URL poster_url = new URL(reader.getString("Poster"));
+                result.setPoster(Drawable.createFromStream(poster_url.openStream(), null));
+
             } catch(Exception e) {
                 e.printStackTrace();
             }
