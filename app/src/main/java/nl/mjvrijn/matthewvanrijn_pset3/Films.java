@@ -1,5 +1,6 @@
 package nl.mjvrijn.matthewvanrijn_pset3;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
@@ -8,15 +9,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.JsonReader;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,6 +67,9 @@ public class Films extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if(id == R.id.action_add) {
+            Intent i = new Intent(Films.this, Add.class);
+            startActivity(i);
         }
 
         return super.onOptionsItemSelected(item);
@@ -77,19 +78,21 @@ public class Films extends AppCompatActivity {
     private void loadSave() {
         SharedPreferences prefs = getPreferences(MODE_PRIVATE);
 
-        SharedPreferences.Editor edit = prefs.edit();
-        HashSet<String> tosave = new HashSet<>();
-        tosave.add("tt0120815");
-        tosave.add("tt0068646");
-        tosave.add("tt0108052");
-        tosave.add("tt1375666");
-        tosave.add("tt0102926");
-        tosave.add("tt0253474");
-        tosave.add("tt0172495");
-        tosave.add("tt0211915");
-        tosave.add("tt0086190");
-        edit.putStringSet("saved", tosave);
-        edit.apply();
+        if(prefs.getStringSet("saved", null) == null) {
+            SharedPreferences.Editor edit = prefs.edit();
+            HashSet<String> tosave = new HashSet<>();
+            tosave.add("tt0120815");
+            tosave.add("tt0068646");
+            tosave.add("tt0108052");
+            tosave.add("tt1375666");
+            tosave.add("tt0102926");
+            tosave.add("tt0253474");
+            tosave.add("tt0172495");
+            tosave.add("tt0211915");
+            tosave.add("tt0086190");
+            edit.putStringSet("saved", tosave);
+            edit.apply();
+        }
 
         Set<String> saved = prefs.getStringSet("saved", new HashSet<String>());
 
@@ -98,7 +101,7 @@ public class Films extends AppCompatActivity {
         }
     }
 
-    public class APIConnection extends AsyncTask<String, Integer, String> {
+    private class APIConnection extends AsyncTask<String, Integer, String> {
         private String address = "http://www.omdbapi.com/?i=%s";
         private Film result = new Film();
 
