@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -20,6 +21,7 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -77,10 +79,10 @@ public class Add extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String... params) {
-            String imdbID = params[0];
 
             try {
-                URL url = new URL(String.format(address, imdbID));
+                String query = URLEncoder.encode(params[0], "UTF-8");
+                URL url = new URL(String.format(address, query));
                 InputStream is = url.openStream();
 
                 // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
@@ -117,6 +119,7 @@ public class Add extends AppCompatActivity {
             results.clear();
             results.addAll(films);
             adapter.notifyDataSetChanged();
+            layoutManager.scrollToPosition(0);
             super.onPostExecute(s);
         }
     }
