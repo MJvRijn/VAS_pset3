@@ -1,5 +1,6 @@
 package nl.mjvrijn.matthewvanrijn_pset3;
 
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -56,7 +57,7 @@ public class Add extends AppCompatActivity {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    String query = field.getText().toString();
+                    String query = field.getText().toString().trim();
                     new APIConnection().execute(query);
                     return true;
                 } else {
@@ -93,13 +94,11 @@ public class Add extends AppCompatActivity {
                 JSONArray reader = new JSONObject(json).getJSONArray("Search");
 
                 for(int i = 0; i < reader.length(); i++) {
-                    Film f = new Film();
-                    f.setTitle(reader.getJSONObject(i).getString("Title"));
-                    f.setYear(reader.getJSONObject(i).getInt("Year"));
+                    Film f = new Film(reader.getJSONObject(i));
 
                     try {
                         URL poster_url = new URL(reader.getJSONObject(i).getString("Poster"));
-                        f.setPoster(Drawable.createFromStream(poster_url.openStream(), null));
+                        f.setPoster(getCacheDir(), BitmapFactory.decodeStream(poster_url.openStream()));
                     } catch(MalformedURLException e) {
                         Log.w(this.getClass().getSimpleName(), "Failed to get film poster");
                     }

@@ -1,30 +1,60 @@
+//http://www.parcelabler.com/
 package nl.mjvrijn.matthewvanrijn_pset3;
 
-import android.graphics.drawable.Drawable;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
-public class Film {
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
+
+public class Film implements Serializable{
+    private File poster;
     private String title;
+    private String imdbID;
     private int year;
-    private Drawable poster;
+
 
     public Film() {
 
     }
 
-    public Drawable getPoster() {
-        return poster;
+    public Film(JSONObject json) {
+        try {
+            title = json.getString("Title");
+            year = json.getInt("Year");
+            imdbID = json.getString("imdbID");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void setPoster(Drawable p) {
-        poster = p;
+    public Bitmap getPoster() {
+        if(poster != null) {
+            return BitmapFactory.decodeFile(poster.getAbsolutePath());
+        } else {
+            return null;
+        }
     }
 
-    public int getYear() {
-        return year;
-    }
+    public void setPoster(File cacheDir, Bitmap p) {
+        File f = null;
+        FileOutputStream fos = null;
+        try {
+            f = new File(cacheDir, p.hashCode() + ".bmp");
+            fos = new FileOutputStream(f);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
 
-    public void setYear(int y) {
-        year = y;
+        p.compress(Bitmap.CompressFormat.PNG, 85, fos);
+
+        poster = f;
     }
 
     public String getTitle() {
@@ -35,5 +65,19 @@ public class Film {
         title = t;
     }
 
+    public int getYear() {
+        return year;
+    }
 
+    public void setYear(int y) {
+        year = y;
+    }
+
+    public String getImdbID() {
+        return imdbID;
+    }
+
+    public void setImdbID(String i) {
+        imdbID = i;
+    }
 }

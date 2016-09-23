@@ -2,13 +2,16 @@ package nl.mjvrijn.matthewvanrijn_pset3;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -45,9 +48,16 @@ public class Films extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
         adapter = new FilmsAdapter(favourites);
-        loadSave();
+        //updateData();
         recyclerView.setAdapter(adapter);
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        updateData();
     }
 
     @Override
@@ -75,42 +85,37 @@ public class Films extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void loadSave() {
-        SharedPreferences prefs = getPreferences(MODE_PRIVATE);
-
-        if(prefs.getStringSet("saved", null) == null) {
-            SharedPreferences.Editor edit = prefs.edit();
-            HashSet<String> tosave = new HashSet<>();
-            tosave.add("tt0120815");
-            tosave.add("tt0068646");
-            tosave.add("tt0108052");
-            tosave.add("tt1375666");
-            tosave.add("tt0102926");
-            tosave.add("tt0253474");
-            tosave.add("tt0172495");
-            tosave.add("tt0211915");
-            tosave.add("tt0086190");
-            edit.putStringSet("saved", tosave);
-            edit.apply();
-        }
-
+    private void updateData() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Films.this);
         Set<String> saved = prefs.getStringSet("saved", new HashSet<String>());
+        ArrayList<Film> toRemove = new ArrayList<>();
+        ArrayList<String> imdbIDs = new ArrayList<>();
 
-        for(String id : saved) {
-            new APIConnection().execute(id);
+        for(Film f : favourites) {
+            if(!saved.contains(f.getImdbID())) {
+                toRemove.add(f);
+            } else {
+                imdbIDs.add(f.getImdbID());
+            }
         }
+
+        for(String imdbID : saved) {
+            if(!imdbIDs.contains(imdbID)) {
+                new ImdbIDTask().execute(imdbID);
+            }
+        }
+
+        favourites.removeAll(toRemove);
+        adapter.notifyDataSetChanged();
     }
 
-    private class APIConnection extends AsyncTask<String, Integer, String> {
-        private String address = "http://www.omdbapi.com/?i=%s";
-        private Film result = new Film();
+    private class ImdbIDTask extends AsyncTask<String, Integer, String> {
+        private Film result;
 
         @Override
         protected String doInBackground(String... params) {
-            String imdbID = params[0];
-
             try {
-                URL url = new URL(String.format(address, imdbID));
+                URL url = new URL(String.format("http://www.omdbapi.com/?i=%s", params[0]));
                 InputStream is = url.openStream();
 
                 // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
@@ -118,11 +123,9 @@ public class Films extends AppCompatActivity {
                 String json = s.hasNext() ? s.next() : "";
 
                 JSONObject reader = new JSONObject(json);
-
-                result.setTitle(reader.getString("Title"));
-                result.setYear(reader.getInt("Year"));
+                result = new Film(reader);
                 URL poster_url = new URL(reader.getString("Poster"));
-                result.setPoster(Drawable.createFromStream(poster_url.openStream(), null));
+                result.setPoster(getCacheDir(), BitmapFactory.decodeStream(poster_url.openStream()));
 
             } catch(Exception e) {
                 e.printStackTrace();
