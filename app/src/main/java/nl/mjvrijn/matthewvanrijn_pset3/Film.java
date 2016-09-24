@@ -17,15 +17,28 @@ import java.net.URL;
 
 public class Film implements Serializable{
     private File poster;
-    private String title;
     private String imdbID;
+    private String title;
+    private String plot;
+    private String runtime;
+    private String director;
+    private double rating;
     private int year;
 
     public Film(File cacheDir, JSONObject json) {
         try {
+            // Add info available in both search and id queries
             title = json.getString("Title");
             year = json.getInt("Year");
             imdbID = json.getString("imdbID");
+
+            // Add info exclusive to id queries
+            if(json.has("Plot")) {
+                plot = json.getString("Plot");
+                director = json.getString("Director");
+                rating = json.getDouble("imdbRating");
+                runtime = json.getString("Runtime");
+            }
 
             try {
                 URL poster_url = new URL(json.getString("Poster"));
@@ -62,27 +75,31 @@ public class Film implements Serializable{
         poster = f;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String t) {
-        title = t;
-    }
-
-    public int getYear() {
-        return year;
-    }
-
-    public void setYear(int y) {
-        year = y;
-    }
-
     public String getImdbID() {
         return imdbID;
     }
 
-    public void setImdbID(String i) {
-        imdbID = i;
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDirector() {
+        return director;
+    }
+
+    public String getPlot() {
+        return plot;
+    }
+
+    public String getRuntime() {
+        return runtime;
+    }
+
+    public double getRating() {
+        return rating;
+    }
+
+    public int getYear() {
+        return year;
     }
 }

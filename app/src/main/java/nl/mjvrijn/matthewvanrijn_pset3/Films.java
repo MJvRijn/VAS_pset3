@@ -40,7 +40,7 @@ public class Films extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        setTitle("Films");
+        setTitle("Watch List");
         favourites = new ArrayList<>();
 
         recyclerView = (RecyclerView) findViewById(R.id.films_recycler_view);
@@ -50,7 +50,6 @@ public class Films extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
         adapter = new FilmsAdapter(favourites);
-        //updateData();
         recyclerView.setAdapter(adapter);
 
         ItemTouchHelper.SimpleCallback swipeListener = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -140,9 +139,7 @@ public class Films extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        } else if(id == R.id.action_add) {
+        if(id == R.id.action_add) {
             Intent i = new Intent(Films.this, Add.class);
             startActivity(i);
         }

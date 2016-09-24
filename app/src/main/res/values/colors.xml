@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#33962f</color>
     <color name="colorPrimaryDark">#317b1f</color>
-    <color name="colorAccent">#ffea00</color>
-    <color name="buttonSaved">#ff000d</color>
-    <color name="buttonUnsaved">#66ff00</color>
+    <color name="colorAccent">#000000</color>
+    <color name="buttonSaved">#d2252e</color>
+    <color name="buttonUnsaved">#33962f</color>
 </resources>

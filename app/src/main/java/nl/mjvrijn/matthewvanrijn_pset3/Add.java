@@ -69,12 +69,6 @@ public class Add extends AppCompatActivity {
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_add, menu);
-        return true;
-    }
 
     private class SearchTask extends AsyncTask<String, Integer, String> {
         private ArrayList<Film> films = new ArrayList<>();

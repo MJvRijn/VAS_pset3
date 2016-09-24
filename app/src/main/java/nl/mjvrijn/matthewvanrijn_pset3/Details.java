@@ -1,14 +1,14 @@
 package nl.mjvrijn.matthewvanrijn_pset3;
 
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -41,10 +41,18 @@ public class Details extends AppCompatActivity {
         ImageView poster = (ImageView) findViewById(R.id.details_poster);
         TextView title = (TextView) findViewById(R.id.details_title);
         TextView year = (TextView) findViewById(R.id.details_year);
+        TextView plot = (TextView) findViewById(R.id.details_plot);
+        TextView runtime = (TextView) findViewById(R.id.details_runtime );
+        TextView rating = (TextView) findViewById(R.id.details_rating);
+        TextView director = (TextView) findViewById(R.id.details_director);
 
         poster.setImageBitmap(film.getPoster());
-        title.setText(film.getTitle());
-        year.setText(""+film.getYear());
+        title.setText(Html.fromHtml(String.format("<b>Title:</b> %s", film.getTitle())));
+        year.setText(Html.fromHtml(String.format("<b>Year:</b> %d", film.getYear())));
+        plot.setText(Html.fromHtml(String.format("<b>Plot:</b><br>%s", film.getPlot())));
+        runtime.setText(Html.fromHtml(String.format("<b>Runtime:</b> %s", film.getRuntime())));
+        director.setText(Html.fromHtml(String.format("<b>Director:</b> %s", film.getDirector())));
+        rating.setText(Html.fromHtml(String.format("<b>Rating:</b> %.1f/10", film.getRating())));
 
         updateFAB();
 
