@@ -15,8 +15,10 @@ import android.view.Menu;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.InputStream;
@@ -58,7 +60,7 @@ public class Add extends AppCompatActivity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                     String query = field.getText().toString().trim();
-                    new APIConnection().execute(query);
+                    new SearchTask().execute(query);
                     return true;
                 } else {
                     return false;
@@ -74,39 +76,50 @@ public class Add extends AppCompatActivity {
         return true;
     }
 
-    private class APIConnection extends AsyncTask<String, Integer, String> {
-        private String address = "http://www.omdbapi.com/?s=%s&type=movie";
+    private class SearchTask extends AsyncTask<String, Integer, String> {
         private ArrayList<Film> films = new ArrayList<>();
+        private String query;
+        private boolean result = true;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            Toast.makeText(Add.this, "Searching", Toast.LENGTH_SHORT).show();
+        }
 
         @Override
         protected String doInBackground(String... params) {
+            String response = null;
 
             try {
-                String query = URLEncoder.encode(params[0], "UTF-8");
-                URL url = new URL(String.format(address, query));
+                query = URLEncoder.encode(params[0], "UTF-8");
+                URL url = new URL(String.format("http://www.omdbapi.com/?s=%s&type=movie", query));
                 InputStream is = url.openStream();
 
                 // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
                 Scanner s = new Scanner(is).useDelimiter("\\A");
-                String json = s.hasNext() ? s.next() : "";
-                System.out.println(json);
-
-                JSONArray reader = new JSONObject(json).getJSONArray("Search");
-
-                for(int i = 0; i < reader.length(); i++) {
-                    Film f = new Film(reader.getJSONObject(i));
-
-                    try {
-                        URL poster_url = new URL(reader.getJSONObject(i).getString("Poster"));
-                        f.setPoster(getCacheDir(), BitmapFactory.decodeStream(poster_url.openStream()));
-                    } catch(MalformedURLException e) {
-                        Log.w(this.getClass().getSimpleName(), "Failed to get film poster");
-                    }
-
-                    films.add(f);
-                }
+                response = s.hasNext() ? s.next() : "";
 
             } catch(Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                JSONObject json = new JSONObject(response);
+
+                if (json.getString("Response").equals("True")) {
+                    JSONArray array = json.getJSONArray("Search");
+
+                    for (int i = 0; i < array.length(); i++) {
+                        Film f = new Film(getCacheDir(), array.getJSONObject(i));
+
+                        films.add(f);
+                    }
+                } else {
+                    result = false;
+                }
+            } catch(JSONException e) {
                 e.printStackTrace();
             }
 
@@ -115,10 +128,17 @@ public class Add extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String s) {
+            if(!result) {
+                String message = "No results found for \"" + query + "\"";
+                Toast.makeText(Add.this, message, Toast.LENGTH_LONG).show();
+                Log.i("Networking", message + query + "\"");
+            }
+
             results.clear();
             results.addAll(films);
             adapter.notifyDataSetChanged();
             layoutManager.scrollToPosition(0);
+
             super.onPostExecute(s);
         }
     }

@@ -4,6 +4,7 @@ package nl.mjvrijn.matthewvanrijn_pset3;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URL;
 
 public class Film implements Serializable{
     private File poster;
@@ -19,16 +21,19 @@ public class Film implements Serializable{
     private String imdbID;
     private int year;
 
-
-    public Film() {
-
-    }
-
-    public Film(JSONObject json) {
+    public Film(File cacheDir, JSONObject json) {
         try {
             title = json.getString("Title");
             year = json.getInt("Year");
             imdbID = json.getString("imdbID");
+
+            try {
+                URL poster_url = new URL(json.getString("Poster"));
+                setPoster(cacheDir, BitmapFactory.decodeStream(poster_url.openStream()));
+            } catch(Exception e) {
+                poster = null;
+                Log.i("Networking", "Failed to get poster for \"" + title + "\"");
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -46,13 +51,13 @@ public class Film implements Serializable{
         File f = null;
         FileOutputStream fos = null;
         try {
-            f = new File(cacheDir, p.hashCode() + ".bmp");
+            f = new File(cacheDir, p.hashCode() + ".png");
             fos = new FileOutputStream(f);
         } catch(IOException e) {
             e.printStackTrace();
         }
 
-        p.compress(Bitmap.CompressFormat.PNG, 85, fos);
+        p.compress(Bitmap.CompressFormat.PNG, 75, fos);
 
         poster = f;
     }

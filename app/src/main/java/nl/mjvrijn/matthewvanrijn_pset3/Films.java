@@ -1,22 +1,24 @@
 package nl.mjvrijn.matthewvanrijn_pset3;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -51,6 +53,51 @@ public class Films extends AppCompatActivity {
         //updateData();
         recyclerView.setAdapter(adapter);
 
+        ItemTouchHelper.SimpleCallback swipeListener = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder vh, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder vh, int swipeDir) {
+                final int pos = vh.getAdapterPosition();
+                final Film toRemove = favourites.get(pos);
+
+                new AlertDialog.Builder(Films.this)
+                    .setTitle("Remove from watch list")
+                    .setMessage(String.format("Are you sure you want to remove \"%s\" from your watch list?"
+                                                                            , toRemove.getTitle()))
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            favourites.remove(toRemove);
+                            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Films.this);
+                            SharedPreferences.Editor editor = prefs.edit();
+                            Set<String> saved = prefs.getStringSet("saved", new HashSet<String>());
+                            saved.remove(toRemove.getImdbID());
+                            editor.apply();
+                            adapter.notifyItemRemoved(pos);
+                        }
+
+                    })
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            adapter.notifyItemChanged(pos);
+                        }
+
+                    })
+                    .show();
+
+                //Remove swiped item from list and notify the RecyclerView
+            }
+        };
+
+        ItemTouchHelper swipeHelper = new ItemTouchHelper(swipeListener);
+
+        swipeHelper.attachToRecyclerView(recyclerView);
     }
 
     @Override
@@ -58,6 +105,24 @@ public class Films extends AppCompatActivity {
         super.onResume();
 
         updateData();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        Log.i("Files", "Cleaning Cache");
+        File posterDir = new File(getCacheDir() + "posters/");
+
+        if(posterDir.isDirectory()) {
+            String[] posters = posterDir.list();
+
+            for(String poster : posters) {
+                if(poster.contains(".png")) {
+                    new File(posterDir, poster).delete();
+                }
+            }
+        }
     }
 
     @Override
@@ -91,6 +156,7 @@ public class Films extends AppCompatActivity {
         ArrayList<Film> toRemove = new ArrayList<>();
         ArrayList<String> imdbIDs = new ArrayList<>();
 
+        // Removed from dataset but not from preferences
         for(Film f : favourites) {
             if(!saved.contains(f.getImdbID())) {
                 toRemove.add(f);
@@ -99,6 +165,7 @@ public class Films extends AppCompatActivity {
             }
         }
 
+        // Removed from preferences but no from dataset
         for(String imdbID : saved) {
             if(!imdbIDs.contains(imdbID)) {
                 new ImdbIDTask().execute(imdbID);
@@ -123,9 +190,7 @@ public class Films extends AppCompatActivity {
                 String json = s.hasNext() ? s.next() : "";
 
                 JSONObject reader = new JSONObject(json);
-                result = new Film(reader);
-                URL poster_url = new URL(reader.getString("Poster"));
-                result.setPoster(getCacheDir(), BitmapFactory.decodeStream(poster_url.openStream()));
+                result = new Film(getCacheDir(), reader);
 
             } catch(Exception e) {
                 e.printStackTrace();
