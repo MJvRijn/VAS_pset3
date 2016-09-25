@@ -19,18 +19,14 @@ import android.view.MenuItem;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.Set;
 
 public class Films extends AppCompatActivity {
-    private ArrayList<Film> favourites;
-    private RecyclerView recyclerView;
+    private ArrayList<Film> favourites = new ArrayList<>();
     private RecyclerView.Adapter adapter;
-    private RecyclerView.LayoutManager layoutManager;
 
 
     @Override
@@ -41,29 +37,41 @@ public class Films extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         setTitle("Watch List");
-        favourites = new ArrayList<>();
 
-        recyclerView = (RecyclerView) findViewById(R.id.films_recycler_view);
+        // Set up RecyclerView
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.films_recycler_view);
         recyclerView.setHasFixedSize(true);
 
-        layoutManager = new LinearLayoutManager(this);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
         adapter = new FilmsAdapter(favourites);
         recyclerView.setAdapter(adapter);
 
+        /** Set up Swipe-to-Delete **/
+
+        /* Set up the listener that is called when an item in the recyclerview is moved or swiped off
+         * screen. */
         ItemTouchHelper.SimpleCallback swipeListener = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
+            /* onMove is called when the item is moved, in future this is where feedback like a
+             * background colour change could be implemented. */
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder vh, RecyclerView.ViewHolder target) {
                 return false;
             }
 
+            /* OnSwiped is called when the item is completely swiped off screen, it handles the
+             * the removal from the dataset and the confirmation. */
             @Override
             public void onSwiped(RecyclerView.ViewHolder vh, int swipeDir) {
+                // Get the Film object related to the RecyclerView item that was swiped
                 final int pos = vh.getAdapterPosition();
                 final Film toRemove = favourites.get(pos);
 
+                // Create and show a confirmation dialog box, in which pressing yes removes the film
+                // from the dataset and the SharedPreferences and pressing no notifies the recyclerview
+                // that the item must be put back.
                 new AlertDialog.Builder(Films.this)
                     .setTitle("Remove from watch list")
                     .setMessage(String.format("Are you sure you want to remove \"%s\" from your watch list?"
@@ -89,16 +97,15 @@ public class Films extends AppCompatActivity {
 
                     })
                     .show();
-
-                //Remove swiped item from list and notify the RecyclerView
             }
         };
 
-        ItemTouchHelper swipeHelper = new ItemTouchHelper(swipeListener);
-
-        swipeHelper.attachToRecyclerView(recyclerView);
+        // Attach the listener via an ItemTouchHelper (for animations) to the RecyclerView
+        new ItemTouchHelper(swipeListener).attachToRecyclerView(recyclerView);
     }
 
+    /* When the app is started or the watch list is resumed the data set and SharedPreferences
+     * must be re-synchronised. */
     @Override
     protected void onResume() {
         super.onResume();
@@ -106,6 +113,8 @@ public class Films extends AppCompatActivity {
         updateData();
     }
 
+    /* Film posters are too large to be passed between activities by Intent, so they are saved to
+     * cache. When the app is closed this cache is cleared of all .png files. */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -124,22 +133,17 @@ public class Films extends AppCompatActivity {
         }
     }
 
+    /* Add the "add" button to the action bar. */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_films, menu);
         return true;
     }
 
+    /* Go to the Add activity when the add button is pressed. */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if(id == R.id.action_add) {
+        if(item.getItemId() == R.id.action_add) {
             Intent i = new Intent(Films.this, Add.class);
             startActivity(i);
         }
@@ -147,13 +151,16 @@ public class Films extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /* Synchronise the data set with stored preferences. Do this by first removing all films from
+     * the data set that are not stored in the preferences and then adding all films from the
+     * preferences that are not in the data set. */
     private void updateData() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Films.this);
         Set<String> saved = prefs.getStringSet("saved", new HashSet<String>());
         ArrayList<Film> toRemove = new ArrayList<>();
         ArrayList<String> imdbIDs = new ArrayList<>();
 
-        // Removed from dataset but not from preferences
+        // Removed from data set but not from preferences
         for(Film f : favourites) {
             if(!saved.contains(f.getImdbID())) {
                 toRemove.add(f);
@@ -162,7 +169,7 @@ public class Films extends AppCompatActivity {
             }
         }
 
-        // Removed from preferences but no from dataset
+        // Removed from preferences but no from data set
         for(String imdbID : saved) {
             if(!imdbIDs.contains(imdbID)) {
                 new ImdbIDTask().execute(imdbID);
@@ -173,29 +180,24 @@ public class Films extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
+    /* Definition of an asynchronous task to create a Film object from an imdbID, using the OMDB api */
     private class ImdbIDTask extends AsyncTask<String, Integer, String> {
         private Film result;
 
+        /* Get the data and create the Film asynchronously. */
         @Override
         protected String doInBackground(String... params) {
             try {
                 URL url = new URL(String.format("http://www.omdbapi.com/?i=%s", params[0]));
-                InputStream is = url.openStream();
-
-                // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
-                Scanner s = new Scanner(is).useDelimiter("\\A");
-                String json = s.hasNext() ? s.next() : "";
-
-                JSONObject reader = new JSONObject(json);
-                result = new Film(getCacheDir(), reader);
-
+                JSONObject json = new JSONObject(Utils.inputSteamToString(url.openStream()));
+                result = new Film(getCacheDir(), json);
             } catch(Exception e) {
                 e.printStackTrace();
             }
-
             return null;
         }
 
+        /* Then update the data set and notify the adapter. */
         @Override
         protected void onPostExecute(String s) {
             favourites.add(result);

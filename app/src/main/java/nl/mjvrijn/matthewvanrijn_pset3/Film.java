@@ -1,11 +1,9 @@
 //http://www.parcelabler.com/
 package nl.mjvrijn.matthewvanrijn_pset3;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,7 +13,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 
-public class Film implements Serializable{
+public class Film implements Serializable {
     private File poster;
     private String imdbID;
     private String title;
@@ -25,6 +23,7 @@ public class Film implements Serializable{
     private double rating;
     private int year;
 
+    /* A Film object is constructed from json. */
     public Film(File cacheDir, JSONObject json) {
         try {
             // Add info available in both search and id queries
@@ -34,12 +33,10 @@ public class Film implements Serializable{
 
             // Add info exclusive to id queries
             if(json.has("Plot")) {
-                plot = json.getString("Plot");
-                director = json.getString("Director");
-                rating = json.getDouble("imdbRating");
-                runtime = json.getString("Runtime");
+                updateDetails(json);
             }
 
+            // Download and store the poster in cache, and save a path to it.
             try {
                 URL poster_url = new URL(json.getString("Poster"));
                 setPoster(cacheDir, BitmapFactory.decodeStream(poster_url.openStream()));
@@ -52,7 +49,20 @@ public class Film implements Serializable{
         }
     }
 
-    public Bitmap getPoster() {
+    /* Use json to update the object with details only available when searching by id. */
+    public void updateDetails(JSONObject json) {
+        try {
+            plot = json.getString("Plot");
+            director = json.getString("Director");
+            rating = json.getDouble("imdbRating");
+            runtime = json.getString("Runtime");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /* Read the poster bitmap from the stored path. */
+     public Bitmap getPoster() {
         if(poster != null) {
             return BitmapFactory.decodeFile(poster.getAbsolutePath());
         } else {
@@ -60,6 +70,7 @@ public class Film implements Serializable{
         }
     }
 
+    /* Save the poster bitmap to file and store the path. */
     public void setPoster(File cacheDir, Bitmap p) {
         File f = null;
         FileOutputStream fos = null;
@@ -75,6 +86,7 @@ public class Film implements Serializable{
         poster = f;
     }
 
+    /** Getters **/
     public String getImdbID() {
         return imdbID;
     }
