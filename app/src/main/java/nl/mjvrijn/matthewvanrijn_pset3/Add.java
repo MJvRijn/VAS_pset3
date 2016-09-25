@@ -74,7 +74,7 @@ public class Add extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            Toast.makeText(Add.this, "Searching...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(Add.this, "Searching", Toast.LENGTH_SHORT).show();
         }
 
         /* Get the search result and make the list of Films asynchronously. */
