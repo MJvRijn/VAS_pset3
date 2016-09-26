@@ -120,15 +120,12 @@ public class Films extends AppCompatActivity {
         super.onDestroy();
 
         Log.i("Files", "Cleaning Cache");
-        File posterDir = new File(getCacheDir() + "posters/");
 
-        if(posterDir.isDirectory()) {
-            String[] posters = posterDir.list();
+        String[] posters = getCacheDir().list();
 
-            for(String poster : posters) {
-                if(poster.contains(".png")) {
-                    new File(posterDir, poster).delete();
-                }
+        for(String poster : posters) {
+            if(poster.contains(".png")) {
+                new File(getCacheDir(), poster).delete();
             }
         }
     }
