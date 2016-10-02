@@ -19,3 +19,5 @@
  Decomposition: some methods have become a bit too long which decreases readability such as the oncreate method of the films class. setting up the recyclerView could of been a different method for example. level : 3
 
  modularization : modules are mostly simple and it is clear what their function is. level : 4
+ 
+ General : The code was well structured and easy to read, the only thing missing are the headers mostly.
